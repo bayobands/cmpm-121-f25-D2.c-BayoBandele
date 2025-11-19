@@ -34,6 +34,11 @@ const redoBtn = document.createElement("button");
 redoBtn.textContent = "Redo";
 buttonRow.appendChild(redoBtn);
 
+// --- NEW STEP 10: Export Button ---
+const exportBtn = document.createElement("button");
+exportBtn.textContent = "Export PNG";
+buttonRow.appendChild(exportBtn);
+
 // Marker buttons
 const thinBtn = document.createElement("button");
 thinBtn.textContent = "Thin Marker";
@@ -50,28 +55,24 @@ buttonRow.appendChild(thickBtn);
 const stickerRow = document.createElement("div");
 document.body.appendChild(stickerRow);
 
-// Data-driven sticker list
 const stickerList = ["😀", "⭐", "🔥"];
-
 let currentSticker: string | null = null;
 
-// Helper to rebuild sticker buttons when the list changes
 function rebuildStickerButtons() {
   stickerRow.innerHTML = "";
 
-  stickerList.forEach(stk => {
+  stickerList.forEach((stk) => {
     const btn = document.createElement("button");
     btn.textContent = stk;
     stickerRow.appendChild(btn);
 
     btn.addEventListener("click", () => {
       currentSticker = stk;
-      currentThickness = 0; // not using marker thickness in sticker mode
+      currentThickness = 0;
       selectTool(btn);
     });
   });
 
-  // Custom sticker button
   const customBtn = document.createElement("button");
   customBtn.textContent = "+ Custom";
   stickerRow.appendChild(customBtn);
@@ -85,16 +86,17 @@ function rebuildStickerButtons() {
   });
 }
 
-// Build UI now
 rebuildStickerButtons();
 
 // ======================================================
-// Marker thickness + selection
+// Marker controls
 // ======================================================
 let currentThickness = 2;
 
 function selectTool(btn: HTMLButtonElement) {
-  document.querySelectorAll("button").forEach(b => b.classList.remove("selectedTool"));
+  document.querySelectorAll("button").forEach((b) =>
+    b.classList.remove("selectedTool")
+  );
   btn.classList.add("selectedTool");
 }
 
@@ -132,8 +134,10 @@ class MarkerCommand implements DisplayCommand {
 
   display(ctx: CanvasRenderingContext2D) {
     if (this.points.length < 2) return;
+
     ctx.lineWidth = this.thickness;
     ctx.lineCap = "round";
+
     ctx.beginPath();
     ctx.moveTo(this.points[0][0], this.points[0][1]);
     for (let i = 1; i < this.points.length; i++) {
@@ -162,6 +166,7 @@ class StickerCommand implements DisplayCommand {
   }
 }
 
+// Marker preview
 class ToolPreviewCommand implements DisplayCommand {
   x: number;
   y: number;
@@ -190,6 +195,7 @@ class ToolPreviewCommand implements DisplayCommand {
   }
 }
 
+// Sticker preview
 class StickerPreviewCommand implements DisplayCommand {
   x: number;
   y: number;
@@ -246,8 +252,30 @@ canvas.addEventListener("drawing-changed", redraw);
 canvas.addEventListener("tool-moved", redraw);
 
 // ======================================================
-// MOUSE LOGIC
+// EXPORT FEATURE (STEP 10)
 // ======================================================
+exportBtn.addEventListener("click", () => {
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = 1024;
+  exportCanvas.height = 1024;
+
+  const exportCtx = exportCanvas.getContext("2d")!;
+  exportCtx.scale(4, 4); // upscale from 256 → 1024
+
+  for (const cmd of displayList) {
+    cmd.display(exportCtx);
+  }
+
+  const link = document.createElement("a");
+  link.href = exportCanvas.toDataURL("image/png");
+  link.download = "sketchpad.png";
+  link.click();
+});
+
+// ======================================================
+// MOUSE EVENTS
+// ======================================================
+
 canvas.addEventListener("mousemove", (e) => {
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
@@ -323,5 +351,6 @@ redoBtn.addEventListener("click", () => {
 
 // Example
 const example = document.createElement("p");
-example.innerHTML = `Example asset: <img src="${exampleIconUrl}" class="icon" />`;
+example.innerHTML =
+  `Example asset: <img src="${exampleIconUrl}" class="icon" />`;
 document.body.appendChild(example);
