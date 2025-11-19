@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+# Pre-commit hook for CMPM 121 project
+# This hook runs formatting checks, linting, and type checking before each commit
+
+echo "🔍 Running pre-commit checks..."
+
+# Check if Deno is available
+if ! command -v deno &> /dev/null; then
+    echo "❌ Deno is not installed or not in PATH"
+    echo "Please install Deno: https://deno.land/"
+    exit 1
+fi
+
+# Check formatting
+echo "📝 Checking code formatting..."
+if ! deno task fmt:check; then
+    echo "❌ Code formatting check failed"
+    echo "Run 'deno task fmt' to fix formatting issues"
+    exit 1
+fi
+
+# Run linter
+echo "🔎 Running linter..."
+if ! deno task lint; then
+    echo "❌ Linting failed"
+    echo "Please fix the linting issues before committing"
+    exit 1
+fi
+
+# Type checking
+echo "🔍 Type checking..."
+if ! deno task check; then
+    echo "❌ Type checking failed"
+    echo "Please fix type errors before committing"
+    exit 1
+fi
+
+# Build check (ensures Vite can build the project)
+echo "🏗️ Testing build..."
+if ! deno task build; then
+    echo "❌ Build failed"
+    echo "Please fix build errors before committing"
+    exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"
+exit 0

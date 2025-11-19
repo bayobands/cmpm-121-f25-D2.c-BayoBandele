@@ -1,0 +1,20 @@
+{
+  "name": "Deno Development Environment",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers-extra/features/deno": {
+      "version": "latest"
+    }
+  },
+  "forwardPorts": [5173],
+  "postCreateCommand": "deno --version",
+  "postStartCommand": "chmod +x ./setup-hooks.sh && ./setup-hooks.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "denoland.vscode-deno",
+        "davidanson.vscode-markdownlint"
+      ]
+    }
+  }
+}
