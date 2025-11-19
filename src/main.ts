@@ -159,7 +159,7 @@ class StickerCommand implements DisplayCommand {
   }
 
   display(ctx: CanvasRenderingContext2D) {
-    ctx.font = "24px serif";
+    ctx.font = "35px serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(this.sticker, this.x, this.y);
@@ -216,7 +216,7 @@ class StickerPreviewCommand implements DisplayCommand {
   display(ctx: CanvasRenderingContext2D) {
     ctx.save();
     ctx.globalAlpha = 0.5;
-    ctx.font = "24px serif";
+    ctx.font = "35px serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(this.sticker, this.x, this.y);
