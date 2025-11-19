@@ -57,12 +57,12 @@ document.body.appendChild(stickerRow);
 const stickerList = ["😀", "⭐", "🔥"];
 
 let currentSticker: string | null = null;
-let currentRotation = 0;   // NEW FOR STEP 12
+let currentRotation = 0; // NEW FOR STEP 12
 
 function rebuildStickerButtons() {
   stickerRow.innerHTML = "";
 
-  stickerList.forEach(stk => {
+  stickerList.forEach((stk) => {
     const btn = document.createElement("button");
     btn.textContent = stk;
     stickerRow.appendChild(btn);
@@ -100,7 +100,9 @@ rebuildStickerButtons();
 let currentThickness = 2;
 
 function selectTool(btn: HTMLButtonElement) {
-  document.querySelectorAll("button").forEach(b => b.classList.remove("selectedTool"));
+  document.querySelectorAll("button").forEach((b) =>
+    b.classList.remove("selectedTool")
+  );
   btn.classList.add("selectedTool");
 }
 
@@ -298,7 +300,12 @@ canvas.addEventListener("mousemove", (e) => {
 
   if (currentSticker) {
     if (!previewCommand || !(previewCommand instanceof StickerPreviewCommand)) {
-      previewCommand = new StickerPreviewCommand(x, y, currentSticker, currentRotation);
+      previewCommand = new StickerPreviewCommand(
+        x,
+        y,
+        currentSticker,
+        currentRotation,
+      );
     } else {
       previewCommand.update(x, y, currentSticker, currentRotation);
     }
@@ -332,7 +339,12 @@ canvas.addEventListener("mousedown", (e) => {
   redoStack = [];
 
   if (currentSticker) {
-    const stickerCmd = new StickerCommand(x, y, currentSticker, currentRotation);
+    const stickerCmd = new StickerCommand(
+      x,
+      y,
+      currentSticker,
+      currentRotation,
+    );
     displayList.push(stickerCmd);
 
     // NEW RANDOM ROTATION ON EACH CLICK
@@ -373,5 +385,6 @@ redoBtn.addEventListener("click", () => {
 
 // Example asset
 const example = document.createElement("p");
-example.innerHTML = `Example asset: <img src="${exampleIconUrl}" class="icon" />`;
+example.innerHTML =
+  `Example asset: <img src="${exampleIconUrl}" class="icon" />`;
 document.body.appendChild(example);
