@@ -21,7 +21,7 @@ const ctx = canvas.getContext("2d")!;
 const buttonRow = document.createElement("div");
 document.body.appendChild(buttonRow);
 
-// Clear, Undo, Redo
+// Clear, Undo, Redo, Export
 const clearBtn = document.createElement("button");
 clearBtn.textContent = "Clear";
 buttonRow.appendChild(clearBtn);
@@ -34,7 +34,6 @@ const redoBtn = document.createElement("button");
 redoBtn.textContent = "Redo";
 buttonRow.appendChild(redoBtn);
 
-// --- NEW STEP 10: Export Button ---
 const exportBtn = document.createElement("button");
 exportBtn.textContent = "Export PNG";
 buttonRow.appendChild(exportBtn);
@@ -50,35 +49,42 @@ thickBtn.textContent = "Thick Marker";
 buttonRow.appendChild(thickBtn);
 
 // ======================================================
-// Sticker Section (Step 9)
+// Sticker Section (from Step 9)
 // ======================================================
 const stickerRow = document.createElement("div");
 document.body.appendChild(stickerRow);
 
 const stickerList = ["😀", "⭐", "🔥"];
+
 let currentSticker: string | null = null;
+let currentRotation = 0;   // NEW FOR STEP 12
 
 function rebuildStickerButtons() {
   stickerRow.innerHTML = "";
 
-  stickerList.forEach((stk) => {
+  stickerList.forEach(stk => {
     const btn = document.createElement("button");
     btn.textContent = stk;
     stickerRow.appendChild(btn);
 
     btn.addEventListener("click", () => {
       currentSticker = stk;
+
+      // --- STEP 12 RANDOM ROTATION ---
+      currentRotation = Math.random() * 360;
+
       currentThickness = 0;
       selectTool(btn);
     });
   });
 
+  // custom sticker button
   const customBtn = document.createElement("button");
   customBtn.textContent = "+ Custom";
   stickerRow.appendChild(customBtn);
 
   customBtn.addEventListener("click", () => {
-    const result = prompt("Enter a new sticker (emoji or text):", "🧽");
+    const result = prompt("Enter a new sticker:", "🧽");
     if (result && result.trim() !== "") {
       stickerList.push(result.trim());
       rebuildStickerButtons();
@@ -94,9 +100,7 @@ rebuildStickerButtons();
 let currentThickness = 2;
 
 function selectTool(btn: HTMLButtonElement) {
-  document.querySelectorAll("button").forEach((b) =>
-    b.classList.remove("selectedTool")
-  );
+  document.querySelectorAll("button").forEach(b => b.classList.remove("selectedTool"));
   btn.classList.add("selectedTool");
 }
 
@@ -137,7 +141,6 @@ class MarkerCommand implements DisplayCommand {
 
     ctx.lineWidth = this.thickness;
     ctx.lineCap = "round";
-
     ctx.beginPath();
     ctx.moveTo(this.points[0][0], this.points[0][1]);
     for (let i = 1; i < this.points.length; i++) {
@@ -147,26 +150,35 @@ class MarkerCommand implements DisplayCommand {
   }
 }
 
+// --- UPDATED FOR STEP 12 (rotation) ---
 class StickerCommand implements DisplayCommand {
   x: number;
   y: number;
   sticker: string;
+  rotation: number;
 
-  constructor(x: number, y: number, sticker: string) {
+  constructor(x: number, y: number, sticker: string, rotation: number) {
     this.x = x;
     this.y = y;
     this.sticker = sticker;
+    this.rotation = rotation;
   }
 
   display(ctx: CanvasRenderingContext2D) {
-    ctx.font = "35px serif";
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation * Math.PI / 180);
+
+    ctx.font = "24px serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(this.sticker, this.x, this.y);
+    ctx.fillText(this.sticker, 0, 0);
+
+    ctx.restore();
   }
 }
 
-// Marker preview
+// marker preview
 class ToolPreviewCommand implements DisplayCommand {
   x: number;
   y: number;
@@ -195,37 +207,44 @@ class ToolPreviewCommand implements DisplayCommand {
   }
 }
 
-// Sticker preview
+// --- STICKER PREVIEW WITH ROTATION ---
 class StickerPreviewCommand implements DisplayCommand {
   x: number;
   y: number;
   sticker: string;
+  rotation: number;
 
-  constructor(x: number, y: number, sticker: string) {
+  constructor(x: number, y: number, sticker: string, rotation: number) {
     this.x = x;
     this.y = y;
     this.sticker = sticker;
+    this.rotation = rotation;
   }
 
-  update(x: number, y: number, sticker: string) {
+  update(x: number, y: number, sticker: string, rotation: number) {
     this.x = x;
     this.y = y;
     this.sticker = sticker;
+    this.rotation = rotation;
   }
 
   display(ctx: CanvasRenderingContext2D) {
     ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation * Math.PI / 180);
     ctx.globalAlpha = 0.5;
-    ctx.font = "35px serif";
+
+    ctx.font = "24px serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(this.sticker, this.x, this.y);
+    ctx.fillText(this.sticker, 0, 0);
+
     ctx.restore();
   }
 }
 
 // ======================================================
-// DATA
+// DATA + REDRAW LOGIC
 // ======================================================
 let displayList: DisplayCommand[] = [];
 let redoStack: DisplayCommand[] = [];
@@ -233,9 +252,6 @@ let redoStack: DisplayCommand[] = [];
 let currentCommand: MarkerCommand | null = null;
 let previewCommand: ToolPreviewCommand | StickerPreviewCommand | null = null;
 
-// ======================================================
-// REDRAW
-// ======================================================
 function redraw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -252,7 +268,7 @@ canvas.addEventListener("drawing-changed", redraw);
 canvas.addEventListener("tool-moved", redraw);
 
 // ======================================================
-// EXPORT FEATURE (STEP 10)
+// EXPORT PNG (Step 10)
 // ======================================================
 exportBtn.addEventListener("click", () => {
   const exportCanvas = document.createElement("canvas");
@@ -260,7 +276,7 @@ exportBtn.addEventListener("click", () => {
   exportCanvas.height = 1024;
 
   const exportCtx = exportCanvas.getContext("2d")!;
-  exportCtx.scale(4, 4); // upscale from 256 → 1024
+  exportCtx.scale(4, 4);
 
   for (const cmd of displayList) {
     cmd.display(exportCtx);
@@ -273,9 +289,8 @@ exportBtn.addEventListener("click", () => {
 });
 
 // ======================================================
-// MOUSE EVENTS
+// MOUSE MOVEMENT + PREVIEW
 // ======================================================
-
 canvas.addEventListener("mousemove", (e) => {
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
@@ -283,9 +298,9 @@ canvas.addEventListener("mousemove", (e) => {
 
   if (currentSticker) {
     if (!previewCommand || !(previewCommand instanceof StickerPreviewCommand)) {
-      previewCommand = new StickerPreviewCommand(x, y, currentSticker);
+      previewCommand = new StickerPreviewCommand(x, y, currentSticker, currentRotation);
     } else {
-      previewCommand.update(x, y, currentSticker);
+      previewCommand.update(x, y, currentSticker, currentRotation);
     }
 
     canvas.dispatchEvent(new Event("tool-moved"));
@@ -306,6 +321,9 @@ canvas.addEventListener("mousemove", (e) => {
   }
 });
 
+// ======================================================
+// MOUSE DOWN = place sticker OR draw marker
+// ======================================================
 canvas.addEventListener("mousedown", (e) => {
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
@@ -314,8 +332,12 @@ canvas.addEventListener("mousedown", (e) => {
   redoStack = [];
 
   if (currentSticker) {
-    const stickerCmd = new StickerCommand(x, y, currentSticker);
+    const stickerCmd = new StickerCommand(x, y, currentSticker, currentRotation);
     displayList.push(stickerCmd);
+
+    // NEW RANDOM ROTATION ON EACH CLICK
+    currentRotation = Math.random() * 360;
+
     canvas.dispatchEvent(new Event("drawing-changed"));
     return;
   }
@@ -349,8 +371,7 @@ redoBtn.addEventListener("click", () => {
   canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
-// Example
+// Example asset
 const example = document.createElement("p");
-example.innerHTML =
-  `Example asset: <img src="${exampleIconUrl}" class="icon" />`;
+example.innerHTML = `Example asset: <img src="${exampleIconUrl}" class="icon" />`;
 document.body.appendChild(example);
